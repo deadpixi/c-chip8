@@ -36,6 +36,7 @@ struct CHIP8{
 	uint8_t v[16];
 
 	bool dirty, display[32][64];
+	bool beep;
 
 	int inspertick;
 	char *keymap;
@@ -321,8 +322,11 @@ run(CHIP8 *vm)
 
 		if (vm->delay)
 			vm->delay--;
-		if (vm->sound)
+		if (vm->sound){
+			if (vm->beep)
+				beep();
 			vm->sound--;
+		}
 
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		sleeptonexttick(&start, &end);
@@ -330,14 +334,18 @@ run(CHIP8 *vm)
 	}
 }
 
-#define USAGE "usage: chip8 [-a ADDR] [-k KEYMAP] [-r SEED] [-s SPEED] ROM\n"
+#define USAGE "usage: chip8 [-b] [-a ADDR] [-k KEYMAP] [-r SEED] [-s SPEED] ROM\n"
 int
 main(int argc, char **argv)
 {
-	CHIP8 vm = {.pc = 512, .inspertick = 11, .keymap = "x123qweasdzc4rfv"};
+	CHIP8 vm = {.pc = 512, .inspertick = 11, .keymap = "x123qweasdzc4rfv", .beep = false};
 	int ch = 0;
 	uint16_t addr = vm.pc;
-	while ((ch = getopt(argc, argv, "ha:k:r:s:")) != -1) switch (ch){
+	while ((ch = getopt(argc, argv, "hba:k:r:s:")) != -1) switch (ch){
+		case 'b':
+			vm.beep = true;
+			break;
+
 		case 'a':
 			addr = vm.pc = atoi(optarg);
 			if (addr < 0 || addr >= MEMORY_SIZE)
